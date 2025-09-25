@@ -1,0 +1,540 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1 class="display-4 mb-2">Cryptosystem Web Application</h1>
+    <p class="lead">Secure text and file encryption using classical cipher algorithms</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <!-- Main Encryption/Decryption Panel -->
+        <div class="card cipher-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-key"></i> Cipher Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="cryptoForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Cipher Selection -->
+                            <div class="mb-3">
+                                <label for="cipher_type" class="form-label">Select Cipher Algorithm</label>
+                                <select class="form-select" id="cipher_type" name="cipher_type" required>
+                                    <option value="">Choose a cipher...</option>
+                                    <option value="shift">Shift Cipher (Caesar)</option>
+                                    <option value="substitution">Substitution Cipher</option>
+                                    <option value="affine">Affine Cipher</option>
+                                    <option value="vigenere">Vigenere Cipher</option>
+                                    <option value="hill">Hill Cipher</option>
+                                    <option value="permutation">Permutation Cipher</option>
+                                    <option value="playfair">Playfair Cipher</option>
+                                    <option value="onetimepad">One-Time Pad</option>
+                                </select>
+                            </div>
+
+                            <!-- Key Input -->
+                            <div class="mb-3">
+                                <label for="key" class="form-label">Encryption Key</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="key" name="key" required>
+                                    <button type="button" class="btn btn-outline-secondary" id="generateKeyBtn">
+                                        <i class="fas fa-random"></i> Generate
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" id="validateKeyBtn">
+                                        <i class="fas fa-check"></i> Validate
+                                    </button>
+                                </div>
+                                <div class="form-text" id="keyHelp">Key format depends on selected cipher</div>
+                                <div id="keyValidation" class="mt-2"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <!-- Input Method Selection -->
+                            <div class="mb-3">
+                                <label class="form-label">Input Method</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="input_method" id="text_method" value="text" checked>
+                                    <label class="form-check-label" for="text_method">
+                                        <i class="fas fa-keyboard"></i> Text Input
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="input_method" id="file_method" value="file">
+                                    <label class="form-check-label" for="file_method">
+                                        <i class="fas fa-file-upload"></i> File Upload
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="input_method" id="decrypt_file_method" value="decrypt_file">
+                                    <label class="form-check-label" for="decrypt_file_method">
+                                        <i class="fas fa-file-download"></i> Decrypt File
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Options -->
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="analyzeTextBtn">
+                                    <i class="fas fa-chart-bar"></i> Analyze Text
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" id="generateOTPBtn">
+                                    <i class="fas fa-file-alt"></i> Generate OTP Key
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Text Input Area -->
+                    <div class="mb-3" id="text_input_area">
+                        <label for="text_input" class="form-label">Text to Encrypt/Decrypt</label>
+                        <textarea class="form-control" id="text_input" name="text_input" rows="4" placeholder="Enter your text here..."></textarea>
+                    </div>
+
+                    <!-- File Input Area -->
+                    <div class="mb-3" id="file_input_area" style="display: none;">
+                        <label for="file_input" class="form-label">Select File to Encrypt</label>
+                        <input type="file" class="form-control" id="file_input" name="file">
+                        <div class="form-text">Supports text files (.txt, .py, .html, etc.) and binary files (.jpg, .pdf, .docx, etc.)</div>
+                    </div>
+
+                    <!-- Decrypt File Input Area -->
+                    <div class="mb-3" id="decrypt_file_input_area" style="display: none;">
+                        <label for="decrypt_file_input" class="form-label">Select Encrypted File to Decrypt</label>
+                        <input type="file" class="form-control" id="decrypt_file_input" name="encrypted_file">
+                        <div class="form-text">Select .dat files created by this application</div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="btn-group-custom">
+                        <button type="button" class="btn btn-primary" id="encryptBtn">
+                            <i class="fas fa-lock"></i> Encrypt
+                        </button>
+                        <button type="button" class="btn btn-success" id="decryptBtn">
+                            <i class="fas fa-unlock"></i> Decrypt
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearBtn">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results" style="display: none;">
+            <div class="result-section">
+                <div class="text-center mb-3">
+                    <h5 class="text-white"><i class="fas fa-check-circle"></i> Results</h5>
+                </div>
+                <div id="result_content"></div>
+            </div>
+        </div>
+
+        <!-- Text Analysis Results -->
+        <div id="analysis_results" style="display: none;">
+            <div class="result-section mt-4">
+                <div class="text-center mb-3">
+                    <h5 class="text-white"><i class="fas fa-chart-bar"></i> Text Analysis</h5>
+                </div>
+                <div id="analysis_content"></div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" style="display: none;" class="text-center mt-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Processing...</span>
+            </div>
+            <p class="loading-text">Processing your request...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Cipher Information Modal -->
+<div class="modal fade" id="cipherInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cipher Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="cipherInfoContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add info button -->
+<div class="text-center mt-4">
+    <button type="button" class="info-btn" data-bs-toggle="modal" data-bs-target="#cipherInfoModal">
+        <i class="fas fa-info-circle"></i> Cipher Information & Examples
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Cipher information data
+    const cipherInfo = {
+        'shift': {
+            name: 'Shift Cipher (Caesar)',
+            description: 'Each letter is shifted by a fixed number of positions in the alphabet.',
+            keyFormat: 'A single number (0-25)',
+            example: 'Key: 3, "HELLO" → "KHOOR"'
+        },
+        'substitution': {
+            name: 'Substitution Cipher',
+            description: 'Each letter is replaced by another letter according to a fixed substitution.',
+            keyFormat: '26 unique letters representing the substitution alphabet',
+            example: 'Key: "ZYXWVUTSRQPONMLKJIHGFEDCBA", "HELLO" → "SVOOL"'
+        },
+        'affine': {
+            name: 'Affine Cipher',
+            description: 'Combines multiplication and addition: E(x) = (ax + b) mod 26',
+            keyFormat: 'Two numbers separated by comma: a,b (a must be coprime with 26)',
+            example: 'Key: "5,8", "HELLO" → "RCLLA"'
+        },
+        'vigenere': {
+            name: 'Vigenere Cipher',
+            description: 'Uses a keyword to shift letters by different amounts.',
+            keyFormat: 'A keyword containing only letters',
+            example: 'Key: "SECRET", "HELLO" → "ZINCS"'
+        },
+        'hill': {
+            name: 'Hill Cipher',
+            description: 'Uses matrix multiplication for encryption (2x2 matrix).',
+            keyFormat: '4 numbers separated by commas for 2x2 matrix',
+            example: 'Key: "3,2,5,7", "HELLO" → depends on matrix calculation'
+        },
+        'permutation': {
+            name: 'Permutation Cipher',
+            description: 'Rearranges letters according to a columnar transposition.',
+            keyFormat: 'A keyword that determines column order',
+            example: 'Key: "SECRET", text is arranged in columns and read in key order'
+        },
+        'playfair': {
+            name: 'Playfair Cipher',
+            description: 'Uses a 5x5 grid of letters based on a keyword.',
+            keyFormat: 'A keyword containing only letters',
+            example: 'Key: "KEYWORD", "HELLO" → "HFNOS"'
+        },
+        'onetimepad': {
+            name: 'One-Time Pad',
+            description: 'Uses a random key as long as the message.',
+            keyFormat: 'A string of random characters',
+            example: 'Key: "RANDOMKEY", "HELLO" → depends on key'
+        }
+    };
+
+    // Toggle input method
+    $('input[name="input_method"]').change(function() {
+        const method = $(this).val();
+        $('#text_input_area, #file_input_area, #decrypt_file_input_area').hide();
+        
+        if (method === 'text') {
+            $('#text_input_area').show();
+        } else if (method === 'file') {
+            $('#file_input_area').show();
+        } else if (method === 'decrypt_file') {
+            $('#decrypt_file_input_area').show();
+        }
+    });
+
+    // Clear button
+    $('#clearBtn').click(function() {
+        $('#cryptoForm')[0].reset();
+        $('#results').hide();
+        $('#analysis_results').hide();
+        $('#text_input_area').show();
+        $('#file_input_area, #decrypt_file_input_area').hide();
+        $('#keyHelp').text('Key format depends on selected cipher');
+        $('#keyValidation').html('');
+    });
+
+    // Update key help text and modal content based on cipher selection
+    $('#cipher_type').change(function() {
+        const cipher = $(this).val();
+        let helpText = '';
+        
+        if (cipher && cipherInfo[cipher]) {
+            helpText = cipherInfo[cipher].keyFormat;
+            
+            // Update modal content
+            const info = cipherInfo[cipher];
+            $('#cipherInfoContent').html(`
+                <h6>${info.name}</h6>
+                <p><strong>Description:</strong> ${info.description}</p>
+                <p><strong>Key Format:</strong> ${info.keyFormat}</p>
+                <p><strong>Example:</strong> ${info.example}</p>
+            `);
+        } else {
+            helpText = 'Key format depends on selected cipher';
+            $('#cipherInfoContent').html('<p>Please select a cipher to see information.</p>');
+        }
+        
+        $('#keyHelp').text(helpText);
+        $('#keyValidation').html('');
+    });
+
+    // Encrypt button click
+    $('#encryptBtn').click(function() {
+        performCrypto('encrypt');
+    });
+
+    // Decrypt button click
+    $('#decryptBtn').click(function() {
+        performCrypto('decrypt');
+    });
+
+    // Generate key button
+    $('#generateKeyBtn').click(function() {
+        const cipherType = $('#cipher_type').val();
+        if (!cipherType) {
+            alert('Please select a cipher first');
+            return;
+        }
+
+        $.get(`/generate_key/${cipherType}`)
+            .done(function(response) {
+                if (response.success) {
+                    $('#key').val(response.key);
+                    $('#keyValidation').html('<div class="alert alert-success alert-sm">Key generated successfully!</div>');
+                }
+            })
+            .fail(function() {
+                alert('Error generating key');
+            });
+    });
+
+    // Validate key button
+    $('#validateKeyBtn').click(function() {
+        const cipherType = $('#cipher_type').val();
+        const key = $('#key').val();
+        
+        if (!cipherType || !key) {
+            alert('Please select a cipher and enter a key');
+            return;
+        }
+
+        $.ajax({
+            url: '/validate_key',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                cipher_type: cipherType,
+                key: key
+            }),
+            success: function(response) {
+                if (response.valid) {
+                    $('#keyValidation').html('<div class="alert alert-success alert-sm">Key is valid!</div>');
+                } else {
+                    $('#keyValidation').html(`<div class="alert alert-danger alert-sm">Invalid key: ${response.message}</div>`);
+                }
+            },
+            error: function() {
+                alert('Error validating key');
+            }
+        });
+    });
+
+    // Analyze text button
+    $('#analyzeTextBtn').click(function() {
+        const text = $('#text_input').val();
+        if (!text) {
+            alert('Please enter text to analyze');
+            return;
+        }
+
+        $.ajax({
+            url: '/analyze_text',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({text: text}),
+            success: function(response) {
+                if (response.success) {
+                    displayAnalysis(response.analysis);
+                }
+            },
+            error: function() {
+                alert('Error analyzing text');
+            }
+        });
+    });
+
+    // Generate OTP key button
+    $('#generateOTPBtn').click(function() {
+        const length = prompt('Enter key length (default: 10000):', '10000');
+        const filename = prompt('Enter filename (default: otp_key.txt):', 'otp_key.txt');
+        
+        if (length && filename) {
+            $.ajax({
+                url: '/generate_otp_key',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    length: parseInt(length),
+                    filename: filename
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        $('#key').val(`file:${filename}`);
+                    }
+                },
+                error: function() {
+                    alert('Error generating OTP key file');
+                }
+            });
+        }
+    });
+
+    function performCrypto(action) {
+        const formData = new FormData();
+        formData.append('cipher_type', $('#cipher_type').val());
+        formData.append('key', $('#key').val());
+        
+        const inputMethod = $('input[name="input_method"]:checked').val();
+        
+        if (inputMethod === 'text') {
+            if (action === 'encrypt') {
+                formData.append('text_input', $('#text_input').val());
+            } else if (action === 'decrypt') {
+                formData.append('encrypted_input', $('#text_input').val());
+            }
+        } else if (inputMethod === 'file') {
+            const fileInput = $('#file_input')[0];
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            }
+        } else if (inputMethod === 'decrypt_file') {
+            const fileInput = $('#decrypt_file_input')[0];
+            if (fileInput.files.length > 0) {
+                formData.append('encrypted_file', fileInput.files[0]);
+            }
+        }
+
+        $('#loading').show();
+        $('#results').hide();
+        $('#analysis_results').hide();
+
+        $.ajax({
+            url: '/' + action,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $('#loading').hide();
+                displayResults(response, action);
+            },
+            error: function(xhr) {
+                $('#loading').hide();
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'An error occurred';
+                alert('Error: ' + error);
+            }
+        });
+    }
+
+    function displayResults(response, action) {
+        let content = '';
+        
+        if (response.encrypted_text || response.decrypted_text) {
+            const text = response.encrypted_text || response.decrypted_text;
+            const title = action === 'encrypt' ? 'Encrypted Text' : 'Decrypted Text';
+            
+            content = `
+                <h6>${title}:</h6>
+                <div class="result-area">
+                    <strong>No Spaces:</strong><br>
+                    <code class="text-break">${text.replace(/\s/g, '')}</code><br><br>
+                    <strong>Grouped (5 letters):</strong><br>
+                    <code class="text-break">${text.match(/.{1,5}/g).join(' ')}</code>
+                </div>
+            `;
+            
+            if (response.download_url) {
+                content += `
+                    <div class="mt-3 text-center">
+                        <a href="${response.download_url}" class="download-btn">
+                            <i class="fas fa-download"></i> Download Encrypted File
+                        </a>
+                    </div>
+                `;
+            }
+        }
+        
+        if (response.encrypted_data) {
+            content = `
+                <h6>Encrypted File:</h6>
+                <div class="result-area">
+                    <p><i class="fas fa-check-circle text-success"></i> File has been encrypted successfully.</p>
+                    <p><strong>Original filename:</strong> ${response.filename}</p>
+                    <p><strong>Encrypted filename:</strong> ${response.encrypted_filename}</p>
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="${response.download_url}" class="download-btn">
+                        <i class="fas fa-download"></i> Download Encrypted File
+                    </a>
+                </div>
+            `;
+        }
+        
+        if (response.decrypted_file) {
+            content = `
+                <h6>Decrypted File:</h6>
+                <div class="result-area">
+                    <p><i class="fas fa-check-circle text-success"></i> File has been decrypted successfully.</p>
+                    <p><strong>Original filename:</strong> ${response.original_filename}</p>
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="${response.download_url}" class="download-btn">
+                        <i class="fas fa-download"></i> Download Decrypted File
+                    </a>
+                </div>
+            `;
+        }
+
+        $('#result_content').html(content);
+        $('#results').show();
+    }
+
+    function displayAnalysis(analysis) {
+        let content = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Character Statistics</h6>
+                    <p><strong>Total Characters:</strong> ${analysis.total_characters}</p>
+                    <p><strong>Most Common:</strong> ${analysis.most_common[0]} (${analysis.most_common[1].toFixed(2)}%)</p>
+                    <p><strong>Least Common:</strong> ${analysis.least_common[0]} (${analysis.least_common[1].toFixed(2)}%)</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Top 10 Most Frequent Letters</h6>
+                    <ul class="list-group list-group-flush">
+        `;
+        
+        for (let i = 0; i < Math.min(10, analysis.sorted_frequency.length); i++) {
+            const [char, freq] = analysis.sorted_frequency[i];
+            if (freq > 0) {
+                content += `<li class="list-group-item d-flex justify-content-between">
+                    <span>${char}</span>
+                    <span>${freq.toFixed(2)}%</span>
+                </li>`;
+            }
+        }
+        
+        content += `
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        $('#analysis_content').html(content);
+        $('#analysis_results').show();
+    }
+});
+</script>
+{% endblock %}
